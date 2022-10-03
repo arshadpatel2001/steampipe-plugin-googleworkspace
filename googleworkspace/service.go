@@ -3,7 +3,6 @@ package googleworkspace
 import (
 	"context"
 	"errors"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -11,9 +10,35 @@ import (
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
+	"google.golang.org/api/admin/directory/v1"
 
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 )
+
+func AdminService(ctx context.Context, d *plugin.QueryData) (*admin.Service, error) {
+	// have we already created and cached the service?
+	serviceCacheKey := "googleworkspace.admin"
+	if cachedData, ok := d.ConnectionManager.Cache.Get(serviceCacheKey); ok {
+		return cachedData.(*admin.Service), nil
+	}
+
+	// so it was not in cache - create service
+	opts, err := getSessionConfig(ctx, d)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create service
+	svc, err := admin.NewService(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// cache the service
+	d.ConnectionManager.Cache.Set(serviceCacheKey, svc)
+
+	return svc, nil
+}
 
 func CalendarService(ctx context.Context, d *plugin.QueryData) (*calendar.Service, error) {
 	// have we already created and cached the service?
